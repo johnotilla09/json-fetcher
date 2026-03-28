@@ -1,59 +1,99 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# JSON Fetcher API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based REST API that fetches and serves data from JSONPlaceholder.
 
-## About Laravel
+## Prerequisites
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Docker & Docker Compose
+- Or PHP 8.2+ and Composer (for local development)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Setup Instructions (Docker)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Clone the repository and navigate to the project directory:
 
-## Learning Laravel
+    ```bash
+    cd json-fetcher
+    ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+2. Copy the environment file:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    ```bash
+    cp .env.example .env
+    ```
 
-## Laravel Sponsors
+3. Build and start the Docker containers:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+    ```bash
+    docker-compose up -d --build
+    ```
 
-### Premium Partners
+4. Install PHP dependencies:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+    ```bash
+    docker exec json_fetcher_app composer install
+    ```
 
-## Contributing
+5. Generate the application key:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    ```bash
+    docker exec json_fetcher_app php artisan key:generate
+    ```
 
-## Code of Conduct
+6. Run database migrations:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    ```bash
+    docker exec json_fetcher_app php artisan migrate:fresh
+    ```
 
-## Security Vulnerabilities
+7. Fetch and seed the data from JSONPlaceholder:
+    ```bash
+    docker exec json_fetcher_app php artisan app:fetch-api-data
+    ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The API will now be available at `http://localhost:8000`.
 
-## License
+## Authentication Guide
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This API uses Laravel Sanctum for authentication. To access protected routes, you need an API token.
+
+### 1. Get a Token
+
+To get a token, you need to create a user and log in (or manually generate a token using Tinker if no registration route is exposed).
+
+Using Tinker to quickly generate a token for testing:
+
+```bash
+docker exec -it json_fetcher_app php artisan tinker
+
+// Inside tinker, run:
+$user = App\Models\User::first();
+$token = $user->createToken('test-token')->plainTextToken;
+echo $token;
+```
+
+### 2. Using the Token
+
+Include the token in the `Authorization` header of your HTTP requests as a Bearer token:
+
+```http
+Authorization: Bearer YOUR_GENERATED_TOKEN
+```
+
+### Example Request using cURL
+
+```bash
+curl -H "Accept: application/json" \
+     -H "Authorization: Bearer YOUR_GENERATED_TOKEN" \
+     http://localhost:8000/api/user
+```
+
+## Available Endpoints
+
+- `GET /api/users` - Get all users
+- `GET /api/posts` - Get all posts (Supports `?userId=1` filter)
+- `GET /api/comments` - Get all comments (Supports `?postId=1` filter)
+- `GET /api/albums` - Get all albums
+- `GET /api/photos` - Get all photos
+- `GET /api/todos` - Get all todos
+
+_(Note: Wrap your `APP_NAME` in double quotes in your `.env` file to prevent build errors)_
