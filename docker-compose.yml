@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: json_fetcher_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    container_name: json_fetcher_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: json_fetcher
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
